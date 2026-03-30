@@ -1,0 +1,55 @@
+services:
+  famcal-api:
+    build: ./api
+    container_name: famcal-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - famcal-net
+
+  nova-proxy:
+    build: ./nova-proxy
+    container_name: nova-proxy
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - NOVA_API_KEY=${NOVA_API_KEY}
+      - PORT=8080
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - famcal-net
+
+  famcal-nginx:
+    build: ./nginx
+    container_name: famcal-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/build:/usr/share/nginx/html:ro
+    depends_on:
+      famcal-api:
+        condition: service_healthy
+      nova-proxy:
+        condition: service_healthy
+    networks:
+      - famcal-net
+
+networks:
+  famcal-net:
+    name: famcal-net
+    driver: bridge
