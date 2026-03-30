@@ -1,0 +1,22 @@
+{
+  "name": "famcal-api",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test tests/**/*.test.js"
+  },
+  "dependencies": {
+    "hono": "^4.7.0",
+    "@hono/node-server": "^1.13.0",
+    "node-cron": "^3.0.3",
+    "@supabase/supabase-js": "^2.49.0",
+    "ai": "^4.1.0",
+    "@ai-sdk/anthropic": "^1.2.0",
+    "@ai-sdk/amazon-bedrock": "^2.2.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

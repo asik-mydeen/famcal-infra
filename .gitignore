@@ -1,0 +1,8 @@
+node_modules/
+.env
+*.log
+api/node_modules/
+nginx/build/
+terraform/**/.terraform/
+terraform/**/terraform.tfvars
+terraform/**/*.tfstate*
