@@ -1,0 +1,32 @@
+services:
+  famcal-api:
+    image: ${API_IMAGE:-ghcr.io/asikmydeen/famcal-api:latest}
+    restart: unless-stopped
+    ports: ["3000:3000"]
+    env_file: [.env]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  nova-proxy:
+    image: ${NOVA_IMAGE:-ghcr.io/asikmydeen/nova-proxy:latest}
+    restart: unless-stopped
+    ports: ["8080:8080"]
+    env_file: [.env]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  famcal-nginx:
+    image: ${NGINX_IMAGE:-ghcr.io/asikmydeen/famcal-nginx:latest}
+    restart: unless-stopped
+    ports: ["80:80"]
+    depends_on:
+      famcal-api:
+        condition: service_healthy
+      nova-proxy:
+        condition: service_healthy

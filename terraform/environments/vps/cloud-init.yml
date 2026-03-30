@@ -1,0 +1,10 @@
+#cloud-config
+package_update: true
+packages:
+  - docker.io
+  - docker-compose-v2
+runcmd:
+  - systemctl enable docker
+  - systemctl start docker
+  - mkdir -p /opt/famcal
+  - echo "Server ready for deployment. Copy docker-compose.cloud.yml and .env to /opt/famcal/"
