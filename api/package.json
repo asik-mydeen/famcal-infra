@@ -12,7 +12,7 @@
     "@hono/node-server": "^1.13.0",
     "node-cron": "^3.0.3",
     "@supabase/supabase-js": "^2.49.0",
-    "ai": "^4.1.0",
+    "ai": "^6.0.0",
     "@ai-sdk/anthropic": "^1.2.0",
     "@ai-sdk/amazon-bedrock": "^2.2.0"
   },
