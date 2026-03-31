@@ -1,0 +1,21 @@
+{
+  "short_name": "FamCal",
+  "name": "FamCal - Family Calendar",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-icon.png",
+      "sizes": "76x76",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#6C5CE7",
+  "background_color": "#13131f"
+}
