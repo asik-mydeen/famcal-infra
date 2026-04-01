@@ -94,10 +94,12 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Trigger Dokploy redeploy
-
-        run: |
-          curl -s -X POST "$DOKPLOY_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d '{"event":"deploy"}' || true
         env:
-          DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL }}
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID }}
+        run: |
+          curl -sf -X POST \
+            -H "X-API-Key: ${DOKPLOY_API_KEY}" \
+            -H "Content-Type: application/json" \
+            "https://projects.asikmydeen.com/api/compose.deploy" \
+            -d "{\"composeId\":\"${DOKPLOY_COMPOSE_ID}\"}" || true
