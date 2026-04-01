@@ -86,3 +86,12 @@ jobs:
             echo ""
             echo "**On TrueNAS:** docker-compose pull && docker-compose up -d"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Trigger Dokploy redeploy
+        if: secrets.DOKPLOY_WEBHOOK_URL != ''
+        run: |
+          curl -s -X POST "$DOKPLOY_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d '{"event":"deploy"}' || true
+        env:
+          DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL }}
