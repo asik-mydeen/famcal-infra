@@ -1,74 +1,79 @@
 # =============================================================================
-# FamCal — TrueNAS Custom App (Docker Compose)
+# FamCal — TrueNAS Self-Hosted (docker-compose)
 # =============================================================================
 #
-# SETUP:
-# 1. In TrueNAS: Apps → Discover → Custom App
-# 2. Paste this YAML
-# 3. Fill in environment variables below
-# 4. If images are private, add registry credentials:
-#    docker login ghcr.io -u asik-mydeen -p <GITHUB_PAT>
+# FIRST-TIME SETUP (SSH into TrueNAS):
+#   mkdir -p /mnt/YOUR_POOL/apps/famcal
+#   cd /mnt/YOUR_POOL/apps/famcal
+#   curl -O https://raw.githubusercontent.com/asik-mydeen/famcal-infra/main/docker-compose.truenas.yml
+#   nano .env   # paste your env vars (see .env.example)
+#   docker compose up -d
 #
-# CLOUDFLARE TUNNEL:
-#   Add entry: calendar.asikmydeen.com → http://172.16.0.1:9080
+# AUTO-UPDATES:
+#   Watchtower (already installed) will detect the containers by name
+#   and pull new images automatically when GitHub Actions pushes to GHCR.
+#   Label com.centurylinklabs.watchtower.enable=true is set on all services.
+#
+# ACCESS:
+#   Web:  http://truenas-ip:9080
+#   API:  http://truenas-ip:9300  (nginx proxies /api/* internally)
+#   Nova: http://truenas-ip:9380  (WebSocket voice relay)
 #
 # =============================================================================
 
 services:
+
+  # ── API ───────────────────────────────────────────────────────────────────
   famcal-api:
     image: ghcr.io/asik-mydeen/famcal-api:latest
     container_name: famcal-api
     restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     ports:
-      - "9300:3000"
+      - "9300:3001"
     environment:
-      # --- Supabase (self-hosted) ---
-      - SUPABASE_URL=https://supabase-api.asikmydeen.com
+      - PORT=3001
+      - SUPABASE_URL=${SUPABASE_URL:-https://supabase-api.asikmydeen.com}
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-      # --- Google OAuth ---
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      # --- OpenAI ---
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      # --- Amazon Nova ---
       - NOVA_API_KEY=${NOVA_API_KEY}
-      # --- Cron ---
+      - REACT_APP_WEATHER_API_KEY=${REACT_APP_WEATHER_API_KEY}
       - CRON_SECRET=${CRON_SECRET}
-      # --- CORS ---
-      - ALLOWED_ORIGINS=https://calendar.asikmydeen.com,tauri://localhost,https://tauri.localhost,http://localhost:3000
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://calendar.asikmydeen.com,tauri://localhost,https://tauri.localhost,http://localhost:3000}
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\""]
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3001/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\""]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
 
+  # ── Nova Proxy ────────────────────────────────────────────────────────────
   nova-proxy:
     image: ghcr.io/asik-mydeen/nova-proxy:latest
     container_name: nova-proxy
     restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     ports:
       - "9380:8080"
     environment:
       - NOVA_API_KEY=${NOVA_API_KEY}
       - PORT=8080
-      - ALLOWED_ORIGINS=https://calendar.asikmydeen.com,tauri://localhost,https://tauri.localhost,http://localhost:3000
-    healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:8080/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\""]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://calendar.asikmydeen.com,tauri://localhost,https://tauri.localhost,http://localhost:3000}
 
+  # ── Web / nginx ───────────────────────────────────────────────────────────
   famcal-nginx:
     image: ghcr.io/asik-mydeen/famcal-nginx:latest
     container_name: famcal-nginx
     restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     ports:
       - "9080:80"
     depends_on:
       famcal-api:
-        condition: service_healthy
-      nova-proxy:
         condition: service_healthy
