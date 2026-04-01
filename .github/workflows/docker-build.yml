@@ -41,7 +41,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          dockerfile: Dockerfile
+          file: Dockerfile
           push: true
           cache-from: type=gha,scope=famcal-web
           cache-to: type=gha,mode=max,scope=famcal-web
@@ -53,7 +53,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          dockerfile: server/Dockerfile
+          file: server/Dockerfile
           push: true
           cache-from: type=gha,scope=famcal-api
           cache-to: type=gha,mode=max,scope=famcal-api
@@ -65,7 +65,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./nova-proxy
-          dockerfile: nova-proxy/Dockerfile
+          file: nova-proxy/Dockerfile
           push: true
           cache-from: type=gha,scope=famcal-nova
           cache-to: type=gha,mode=max,scope=famcal-nova
