@@ -4,85 +4,85 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  repository_dispatch:
+    types: [famcal-source-updated]
 
 env:
-  REGISTRY: ghcr.io
+  OWNER: asik-mydeen
+  SOURCE_REPO: asikmydeen/famcal
+  SOURCE_REF: main
 
 jobs:
-  build-api:
+  build-and-push:
+    name: Build & Push all images
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    env:
-      IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/famcal-api
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Log in to GHCR
+    steps:
+      - name: Checkout famcal source (asikmydeen/famcal)
+        uses: actions/checkout@v4
+        with:
+          repository: asikmydeen/famcal
+          ref: main
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & push API
+      - name: Build & push  famcal-nginx (React + nginx)
         uses: docker/build-push-action@v6
         with:
-          context: ./api
+          context: .
+          dockerfile: Dockerfile
           push: true
+          cache-from: type=gha,scope=famcal-web
+          cache-to: type=gha,mode=max,scope=famcal-web
           tags: |
-            ${{ env.IMAGE_NAME }}:latest
-            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ghcr.io/asik-mydeen/famcal-nginx:latest
+            ghcr.io/asik-mydeen/famcal-nginx:${{ github.sha }}
 
-  build-nova:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    env:
-      IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/nova-proxy
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - name: Build & push famcal-api (Express API)
+        uses: docker/build-push-action@v6
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          context: .
+          dockerfile: server/Dockerfile
+          push: true
+          cache-from: type=gha,scope=famcal-api
+          cache-to: type=gha,mode=max,scope=famcal-api
+          tags: |
+            ghcr.io/asik-mydeen/famcal-api:latest
+            ghcr.io/asik-mydeen/famcal-api:${{ github.sha }}
 
-      - name: Build & push Nova proxy
+      - name: Build & push famcal-nova-proxy
         uses: docker/build-push-action@v6
         with:
           context: ./nova-proxy
+          dockerfile: nova-proxy/Dockerfile
           push: true
+          cache-from: type=gha,scope=famcal-nova
+          cache-to: type=gha,mode=max,scope=famcal-nova
           tags: |
-            ${{ env.IMAGE_NAME }}:latest
-            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ghcr.io/asik-mydeen/nova-proxy:latest
+            ghcr.io/asik-mydeen/nova-proxy:${{ github.sha }}
 
-  build-nginx:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    env:
-      IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/famcal-nginx
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build & push Nginx
-        uses: docker/build-push-action@v6
-        with:
-          context: ./nginx
-          push: true
-          tags: |
-            ${{ env.IMAGE_NAME }}:latest
-            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+      - name: Build summary
+        run: |
+          {
+            echo "## Images pushed to GHCR"
+            echo ""
+            echo "| Image | Tag |"
+            echo "|-------|-----|"
+            echo "| ghcr.io/asik-mydeen/ famcal-nginx | latest |"
+            echo "| ghcr.io/asik-mydeen/famcal-api | latest |"
+            echo "| ghcr.io/asik-mydeen/nova-proxy | latest |"
+            echo ""
+            echo "**On TrueNAS:** docker-compose pull && docker-compose up -d"
+          } >> "$GITHUB_STEP_SUMMARY"
