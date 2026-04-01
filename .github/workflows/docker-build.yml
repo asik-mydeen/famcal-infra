@@ -45,6 +45,12 @@ jobs:
           push: true
           cache-from: type=gha,scope=famcal-web
           cache-to: type=gha,mode=max,scope=famcal-web
+          build-args: |
+            REACT_APP_SUPABASE_URL=${{ secrets.REACT_APP_SUPABASE_URL }}
+            REACT_APP_SUPABASE_ANON_KEY=${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}
+            REACT_APP_GOOGLE_CLIENT_ID=${{ secrets.REACT_APP_GOOGLE_CLIENT_ID }}
+            REACT_APP_SITE_URL=https://calendar.asikmydeen.com
+            REACT_APP_NOVA_PROXY_URL=wss://nova.asikmydeen.com
           tags: |
             ghcr.io/asik-mydeen/famcal-nginx:latest
             ghcr.io/asik-mydeen/famcal-nginx:${{ github.sha }}
